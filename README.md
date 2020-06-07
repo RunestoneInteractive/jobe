@@ -1,6 +1,6 @@
 # JOBE
 
-Version: 1.6.0, 28 January 2019
+Version: 1.6.2+, 24 May 2020
 
 
 Author: Richard Lobb, University of Canterbury, New Zealand
@@ -131,17 +131,17 @@ installed.
 
 ### Installing the necessary dependencies
 
-On Ubuntu-16.04 or 18.04, a command to set up all the necessary web tools plus
+On Ubuntu-16.04 or 18.04, the commands to set up all the necessary web tools plus
 all currently-supported languages is the following:
 
-    sudo apt install apache2 php libapache2-mod-php php-cli\
-        php-mbstring octave nodejs git python3 build-essential openjdk-8-jre\
-        openjdk-8-jdk python3-pip fp-compiler pylint3 acl sudo sqlite3
+    sudo apt-get install apache2 php libapache2-mod-php php-cli\
+        php-mbstring nodejs git python3 build-essential default-jdk\
+        python3-pip fp-compiler acl sudo sqlite3
 
-Octave, fp and pylint are required only if you need to run Octave or Pascal
-programs or test Python programs with pylint, respectively. Newer versions of
-openjdk are available on Ubuntu 18.04, so you may wish to replace the two
-openjdk-8 packages with their openjdk-11 equivalents.
+    sudo apt-get install --no-install-suggests --no-install-recommends  octave
+
+Octave and fp are required only if you need to run Octave or Pascal
+programs respectively.
 
 If you wish to use API-authentication, which is generally pointless when setting
 up a private Jobe server, you also need the following:
@@ -152,21 +152,32 @@ Similar commands should work on other Debian-based Linux distributions,
 although some differences are inevitable (e.g.: acl is preinstalled in Ubuntu,
 whereas in debian it must be installed).
 
-### Setting pylint3 options (if you want pylint)
+A Raspberry Pi user reports that they additionally had to use the command
 
-If you're going to use pylint, you also need to build the /etc/pylintrc file
+    apt-get install --fix-missing
+
+which may help with broken installs on other systems, too.
+
+### Setting up pylint (if you want it)
+
+Firstly, install pylint for your required version of python (assumed here to
+be python3) with the command:
+
+    sudo -H python3 -m pip install pylint
+
+You also need to build the /etc/pylintrc file
 to set the default options with one of the following commands, which must be
 run as root (don't just try prefixing the command with sudo, as the output redirection
 will fail).
 
 Firstly try the command:
 
-    pylint3 --reports=no --score=n --generate-rcfile > /etc/pylintrc
+    pylint --reports=no --score=n --generate-rcfile > /etc/pylintrc
 
 If that gives you an error "no such option: --score" (which happens with
-older versions of pylint3), try instead
+older versions of pylint), try instead
 
-    pylint3 --reports=no --generate-rcfile > /etc/pylintrc
+    pylint --reports=no --generate-rcfile > /etc/pylintrc
 
 ### Installing Jobe
 
@@ -282,6 +293,35 @@ any client machine that is allowed to access the jobe server, edit the line
 
 to reference the JOBE_SERVER, e.g. by replacing *localhost* with its IP
 number, and re-run the tester with the same command from the client machine.
+
+## Using Jobe
+
+Usually Jobe is used as a server for Moodle CodeRunner questions. So once jobe
+has been installed and tested with `testsubmit.py` it can be used by CodeRunner
+questions by plugging the Jobe server hostname into the CodeRunner administrator
+settings, replacing the default value of `jobe2.cosc.canterbury.ac.nz`.
+
+However, Jobe can also be used standalone. The `testsubmit.py` program shows
+how it can be invoked from a Python client. There are also two other simpler
+clients provided in this repository: `simpletest.py` and `minimaltest.py`.
+Note that the POST request
+payload must a JSON object with a *run_spec* attribute as specified in the
+document *restapi.pdf*. For example, the following POST data runs the classic
+C "Hello World" program:
+
+    {"run_spec": {"language_id": "c", "sourcefilename": "test.c", "sourcecode": "\n#include <stdio.h>\n\nint main() {\n    printf(\"Hello world\\n\");\n}\n"}}
+
+The POST request must have the header
+
+    Content-type: application/json; charset-utf-8
+
+and should be sent to a URL like
+
+    localhost/jobe/index.php/restapi/runs
+
+For example, the following Linux `curl` command runs the C Hello World program:
+
+    curl -d '{"run_spec": {"language_id": "c", "sourcefilename": "test.c", "sourcecode": "\n#include <stdio.h>\n\nint main() {\n    printf(\"Hello world\\n\");\n}\n"}}' -H "Content-type: application/json; charset-utf-8"  localhost/jobe/index.php/restapi/runs
 
 ## Updating Jobe
 
@@ -496,8 +536,9 @@ before the job is aborted
  1. streamsize (2): the maximum number of megabytes of standard output before the
 job is aborted.
  1. cputime (5): the maximum number of seconds of CPU time before the job is aborted
- 1. memorylimit (200): the maximum number of megabytes of memory the task can
-consume. This value is used to set the Linux RLIMIT_STACK, RLIMIT_DATA and
+ 1. memorylimit (usually 200 but 600 for Python3):
+the maximum number of megabytes of memory the task can consume. This value is
+used to set the Linux RLIMIT_STACK, RLIMIT_DATA and
 RLIMIT_AS via the *setrlimit* system call. If the value is exceeded the job
 is not aborted but malloc and/or mmap calls will fail to allocate more memory
 with somewhat unpredictable results, although a segmentation fault is the most
@@ -534,30 +575,30 @@ An empty default means the global default is used.
 <tr>
    <th>language_id</th><th>language</th><th>compileargs</th><th>interpreterargs</th>
 </tr>
-  <td>c</td><td>C</td><td>['-Wall', -Werror', '-std=c99', '-x c']</td><td></td>
+  <td>c</td><td>C</td><td>["-Wall", "-Werror", "-std=c99", "-x c"]</td><td></td>
 <tr>
-  <td>cpp</td><td>C++</td><td>['-Wall', '-Werror']</td><td></td>
+  <td>cpp</td><td>C++</td><td>["-Wall", "-Werror"]</td><td></td>
 </tr>
 <tr>
-  <td>python2</td><td>Python2</td><td></td><td>['-BESs']</td>
+  <td>python2</td><td>Python2</td><td></td><td>["-BESs"]</td>
 </tr>
 <tr>
-  <td>python3</td><td>Python3</td><td></td><td>['-BE']</td>
+  <td>python3</td><td>Python3</td><td></td><td>["-BE"]</td>
 </tr>
 <tr>
-  <td>java</td><td>Java</td><td></td><td>['-Xrs', '-Xss8m', '-Xmx200m']</td>
+  <td>java</td><td>Java</td><td></td><td>["-Xrs", "-Xss8m", "-Xmx200m"]</td>
 </tr>
 <tr>
-  <td>nodejs</td><td>JavaScript (nodejs)</td><td></td><td>['--use_strict']</td>
+  <td>nodejs</td><td>JavaScript (nodejs)</td><td></td><td>["--use_strict"]</td>
 </tr>
 <tr>
-  <td>octave</td><td>Octave (matlab variant)</td><td></td><td>['--norc', '--no-window-system', '--silent', '-H']</td>
+  <td>octave</td><td>Octave (matlab variant)</td><td></td><td>["--norc", "--no-window-system", "--silent", "-H"]</td>
 </tr>
 <tr>
-  <td>php</td><td>PHP</td><td></td><td>['--no-php-ini']</td>
+  <td>php</td><td>PHP</td><td></td><td>["--no-php-ini"]</td>
 </tr>
 <tr>
-  <td>pascal</td><td>Free Pascal</td><td>['-vew', '-Se']</td><td></td>
+  <td>pascal</td><td>Free Pascal</td><td>["-vew", "-Se"]</td><td></td>
 </tr>
 
 </table>
@@ -571,7 +612,7 @@ advanced customisation capabilities) of either the question prototype
 or within a particular question as suggested by the previous
 section. For example, if the sandbox *Parameters* field is set to
 
-        { 'compileargs': ['-Wall', '-Werror', 'std=c89'] }
+        { "compileargs": ["-Wall", "-Werror", "-std=c89"] }
 
 for a C question, the code will be compiled with all warnings enabled, aborting
 if any warnings are issued and will need to be C89 compliant.
@@ -761,6 +802,37 @@ Thanks Tim Hunt for most of the work in this addition.
   1. Document in restapi that use of *check_file* to confirm existence of a
      required file before a run is unsafe, as the file might be removed by
      the cache cleaner between the two runs.
+
+### 1.6.0+ (5 December 2019)
+
+  1. Correct bad JSON in documentation (was using single quoted strings).
+
+### 1.6.1 (14 April 2020)
+
+  1. Tweak handling of timeouts to kill jobs after a wall-clock time in excess
+     of twice the given max_cpu_time
+  1. Document issue with handling of resource limits. Jobe is inappropriately
+     applying the compile resource limits even for non-compile tasks.
+     However, fixing this might break existing questions and it's not a
+     serious problem.
+  1. Correct bad JSON in documentation that used single-quoted strings.
+  1. Add /var/lock to the list of directories to be cleaned on task exit.
+     While it's usually a symbolic link to /run/lock, apparently that's not
+     always the case.
+  1. Accept Java programs that use "static public" in main() declaration rather
+     than the more usual "public static".
+  1. Fix deprecation warning with PHP 7.4 (and possibly earlier) resulting from
+     loading the JSON-encoded language cache file into an object rather than an
+     associative array.
+
+### 1.6.2 (16 May 2020)
+
+  1. Increase memory limit for Python3 to 600 MB. Document.
+
+### 1.6.2+ (24 May 2020)
+
+  1. Change install instructions to install non-GUI Octave.
+
 
 Richard
 

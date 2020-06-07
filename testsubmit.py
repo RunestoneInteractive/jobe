@@ -164,9 +164,9 @@ for arg in sys.argv[1:]:
 {
     'comment': 'Python3 program with customised timeout',
     'language_id': 'python3',
-    'sourcecode': r'''from time import clock
-t = clock()
-while clock() < t + 10: pass  # Wait 10 seconds
+    'sourcecode': r'''from time import perf_counter
+t = perf_counter()
+while perf_counter() < t + 10: pass  # Wait 10 seconds
 print("Hello Python")
 ''',
     'sourcefilename': 'test.py',
@@ -211,7 +211,7 @@ def check_code(s):
         env = os.environ.copy()
         os.mkdir('Home')
         env['HOME'] = os.getcwd() + '/Home'
-        result = subprocess.check_output(['pylint3', '--reports=no', 'source.py'],
+        result = subprocess.check_output(['pylint', '--reports=no', 'source.py'],
             universal_newlines=True, stderr=subprocess.STDOUT, env=env)
         # Fix problem with versions of pylint that insist on telling you
         # what config file they're using
@@ -254,7 +254,7 @@ def check_code(s):
         env = os.environ.copy()
         os.mkdir('Home')
         env['HOME'] = os.getcwd() + '/Home'
-        result = subprocess.check_output(['pylint3', '--reports=no', 'source.py'],
+        result = subprocess.check_output(['pylint', '--reports=no', 'source.py'],
             universal_newlines=True, stderr=subprocess.STDOUT, env=env)
         # Fix problem with versions of pylint that insist on telling you
         # what config file they're using

@@ -276,12 +276,14 @@ abstract class Task {
         $streamsize = 1000 * $this->getParam('streamsize', $iscompile); // MB -> kB
         $memsize = 1000 * $this->getParam('memorylimit', $iscompile);
         $cputime = $this->getParam('cputime', $iscompile);
+        $killtime = 2 * $cputime; // Kill the job after twice the allowed cpu time
         $numProcs = $this->getParam('numprocs', $iscompile) + 1; // The + 1 allows for the sh command below.
         $sandboxCommandBits = array(
                 "sudo " . dirname(__FILE__)  . "/../../runguard/runguard",
                 "--user={$this->user}",
                 "--group=jobe",
-                "--time=$cputime",         // Seconds of execution time allowed
+                "--cputime=$cputime",      // Seconds of execution time allowed
+                "--time=$killtime",        // Wall clock kill time
                 "--filesize=$filesize",    // Max file sizes
                 "--nproc=$numProcs",       // Max num processes/threads for this *user*
                 "--no-core",
@@ -334,6 +336,9 @@ abstract class Task {
         } else {
             $param = $this->default_params[$key];
         }
+        // ** BUG ** The min_params_compile value is being applied even if
+        // this is not a compile. I'm reluctant to fix, however, as it may
+        // break existing questions with inappropriately low resource settings.
         if ($param != 0 && array_key_exists($key, $this->min_params_compile) &&
                 $this->min_params_compile[$key] > $param) {
             $param = $this->min_params_compile[$key];
