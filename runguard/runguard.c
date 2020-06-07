@@ -523,7 +523,8 @@ long readoptarg(const char *desc, long minval, long maxval)
 void setrestrictions()
 {
         char* savedEnvironmentVariables[] = {"PATH", "LANG", "LC_ALL", "LC_COLLATE",
-            "LC_CTYPE", "LC_MESSAGES", "LC_MONETARY", "LC_NUMERIC", "LC_TIME"};
+					     "LC_CTYPE", "LC_MESSAGES", "LC_MONETARY",
+					     "LC_NUMERIC", "LC_TIME", "CLASSPATH"};
         char* savedValues[sizeof(savedEnvironmentVariables) / sizeof(char*)];
         int numSavedVariables = sizeof(savedEnvironmentVariables) / sizeof(char*);
 	char  cwd[PATH_MAX+1];
@@ -546,6 +547,7 @@ void setrestrictions()
                 setenv(savedEnvironmentVariables[i], savedValues[i], 1);
             }
         }
+	setenv("CLASSPATH", ".:/usr/local/lib/java:/usr/local/lib/java/junit-4.13-beta-3.jar:/usr/local/lib/java/hamcrest-all-1.3.jar", 1);
 
 	/* Set resource limits: must be root to raise hard limits.
 	   Note that limits can thus be raised from the systems defaults! */
