@@ -40,8 +40,8 @@ abstract class Task {
     public $default_params = array(
         'disklimit'     => 20,      // MB (for normal files)
         'streamsize'    => 2,       // MB (for stdout/stderr)
-        'cputime'       => 5,       // secs
-        'memorylimit'   => 200,     // MB
+        'cputime'       => 30,       // secs
+        'memorylimit'   => 600,     // MB
         'numprocs'      => 20,
         'compileargs'   => array(),
         'linkargs'      => array(),
@@ -56,8 +56,8 @@ abstract class Task {
     // less than the one specified here.
     public $min_params_compile = array(
         'disklimit'     => 20,      // MB
-        'cputime'       => 2,       // secs
-        'memorylimit'   => 500,     // MB
+        'cputime'       => 30,       // secs
+        'memorylimit'   => 200,     // MB
         'numprocs'      => 5        // processes
     );
 
