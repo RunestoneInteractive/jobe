@@ -1,11 +1,11 @@
 # JOBE
 
-Version: 1.7.0, 27 November 2022
+Version: 1.8.0, 9 October 2023
 
 
 Author: Richard Lobb, University of Canterbury, New Zealand
 
-Contributors: Tim Hunt, Fedor Lyanguzov, Kai-Cheung Leung
+Contributors: Tim Hunt, Fedor Lyanguzov, Kai-Cheung Leung, Marcus Klang
 
 ## Introduction
 
@@ -40,14 +40,14 @@ with only a few minor bug fixes and security refinements.
 
 ## Implementation status
 
-The current version of Jobe (Version 1.6, January 2019) implements
+The current version of Jobe (Version 1.7.1, May 2023) implements
 a subset of the originally documented API, sufficient for use by CodeRunner.
 It has been used for many years at the University of Canterbury for several
 years, running many millions of submissions. Jobe is also used by over 600 other
 CodeRunner sites around the world. It can be considered stable and secure,
 though it should be run only on a separate appropriately-firewalled server.
 
-With reference to the original API spec, onnly immediate-mode runs are
+With reference to the original API spec, only immediate-mode runs are
 supported, with run results being returned with the
 response to the POST of the run requests. Run results are not retained by
 the server (unless *run\_spec.debug* is true; see the API), so
@@ -81,7 +81,7 @@ Otherwise, they're taken as 8-bit character streams; characters below '\x20'
 (the space
 character) and above '\x7E' are replaced by C-style hexadecimal encodings
 (e.g. '\x8E') except for newlines which are passed through directly, and
-tabls and returns which are replaced with '\t' and '\r' respectively.
+tabs and returns which are replaced with '\t' and '\r' respectively.
 
 If Jobe is to correctly handle utf-8 output from programs, the Apache LANG
 environment variable must be set to a UTF-8 compatible value. See
@@ -103,7 +103,7 @@ on it! **CAVEAT EMPTOR!**
 NOTE: a video walkthrough of the process of setting up a Jobe server
 on a DigitalOcean droplet is [here](https://www.youtube.com/watch?v=dGpnQpLnERw).
 
-Installation on Ubuntu 18.04 systems should be
+Installation on Ubuntu 22.04 systems should be
 straightforward but installation on other flavours of Linux or on systems
 with non-standard configurations may require
 Linux administrator skills.
@@ -111,13 +111,14 @@ Linux administrator skills.
 An alternative approach, and probably the simplest way to get up and running,
 is to use the [JobeInABox](https://hub.docker.com/r/trampgeek/jobeinabox/)
 Docker image, which should be runnable with a single terminal command
-on any Linux system that has
-docker installed. Thanks to David Bowes for the initial work on this.
+on any Linux system that has docker installed. Thanks to David Bowes for the initial work on this.
 Please be aware that while this Docker image has been around for a couple of years
-and no significant issues have been reported the developer has not himself
-used it in a production environment. Feedback is welcomed. The steps to fire
-up a Jobe Server on Digital Ocean using JobeInAbox are given below in section
+the developer has not himself used it in a production environment. Feedback is welcomed.
+The steps to fire up a Jobe Server on Digital Ocean using JobeInAbox are given below in section
 *Setting up a JobeInAbox Digital Ocean server*.
+
+However, for security and performance reasons it it *strongly* recommended to run
+Jobe on a dedicated server, even when running it in a container.
 
 Jobe runs only on Linux, which must have the Apache web server
 installed and running. PHP must have been compiled with the System V
@@ -131,7 +132,7 @@ installed.
 
 ### Installing the necessary dependencies
 
-On Ubuntu-16.04 or 18.04, the commands to set up all the necessary web tools plus
+On Ubuntu-22.04, the commands to set up all the necessary web tools plus
 all currently-supported languages is the following:
 
     sudo apt-get install apache2 php libapache2-mod-php php-cli\
@@ -198,6 +199,21 @@ set-up a jobe-sudoers file in /etc/sudoers.d that allows the web server
 to execute the runguard program as root and to kill any residual jobe
 processes from the run.
 
+Before running the install script, you might wish to edit the file
+
+    /var/www/html/jobe/application/config/config.php
+
+Find the line
+
+    $config['jobe_max_users'] = 8;
+
+and decide if that value, which sets the maximum number of jobs that can be run
+at once, is appropriate for your hardware set up. A rule of thumb is to set this
+to the number of cores on your machine, but if you plan on running lots of
+partially-I/O-bound jobs, you could consider larger numbers.
+
+Having set that value to your satisfaction:
+
     cd WEBROOT/jobe
     sudo ./install
 
@@ -247,11 +263,12 @@ to use Version 3.3 or later.
 
 For people wanting to get a Jobe server up in hurry, the following is
 probably the simplest approach. This uses a minimal Digital Ocean virtual machine,
-costing just $US5.00 per month, to run the Docker *JobeInAbox* image.
+to run the Docker *JobeInAbox* image; you should increase memory and core for
+production servers.
 Other cloud servers, such as Amazon ECS, can of course also be used.
 
  1. Set yourself up with an account on [Digital Ocean](https://cloud.digitalocean.com).
- 2. Create new Droplet: Ubuntu 20.04. x64, minimal config ($5 per month; 1GB CPI, 25GB disk)
+ 2. Create new Droplet: Ubuntu 22.04. x64, minimal config (1GB CPI, 25GB disk)
  3. Connect to the server with an SSH client.
  4. Install docker (see https://phoenixnap.com/kb/how-to-install-docker-on-ubuntu-18-04):
     sudo apt update; sudo apt install docker.io
@@ -542,7 +559,7 @@ defined with an SQL command like
 	) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 You can turn off limit checking on a key-by-key basis by setting the *ignore_limits*
-to FALSE in the *keys* table.
+to TRUE (1) in the *keys* table.
 
 You should read the REST-server plugin documentation and the file
 *application/config/rest.php* for other features available.
@@ -566,7 +583,7 @@ before the job is aborted
  1. streamsize (2): the maximum number of megabytes of standard output before the
 job is aborted.
  1. cputime (5): the maximum number of seconds of CPU time before the job is aborted
- 1. memorylimit (usually 200 but 600 for Python3):
+ 1. memorylimit (default 400 but raised for some languages, e.g. 1000 for Python3):
 the maximum number of megabytes of memory the task can consume. This value is
 used to set the Linux RLIMIT_STACK, RLIMIT_DATA and
 RLIMIT_AS via the *setrlimit* system call. If the value is exceeded the job
@@ -968,3 +985,41 @@ that results in multiple error messages when a python syntax check fails.
 
   1. Add several command-line arguments to make the testsubmit.py program more
      user-friendly.
+
+### 1.7.1 (15 May 2023)
+
+  1. Increase memory allocation for Python as jobs continue to grow in memory demand.
+
+  1. Add HTTP return code to the error message on invalid sourcefilename.
+
+  1. Ensure PHP 8.2 compatibility by allowing dynamic properties in the CodeIgniter core
+     and by adding property declarations to Jobe classes.
+
+  1. Increase the backoff from 1 sec to 5 secs when starting the sustained load testing.
+     Otherwise, the first test could fail.
+
+### 1.7.2 (4 June 2023)
+
+  1. Fix long-standing bug that always applied a compile parameter setting if this was
+    greater than the requested value, even when it wasn't a compile. Hopefully won't
+    break anyone's code (they'd have to have been using very low parameter values).
+
+  1. Bug fix: purge fails if num_jobe_users has been reduced in the config file since the install was run.
+
+  1. Upgrade install to include option to set range of UIDs for Jobe and workers. This should provide
+     a workaround for JobeInABox installs on systems running nginx, which resulted in a UID conflict
+     with the host.
+     Also include a --uninstall option.
+
+### 1.8.0 (9 October 2023)
+
+  1. Add various tuning parameters for Java to config file. Thanks Marcus Klang.
+
+  1. Ensure that install updates runguard config to allow for a large number of
+     Jobe users (> 20). Thanks Marcus Klang.
+
+  1. Add a main_class parameter to Java task. Thanks Peter Seibel.
+
+  1. Increase default per-run memory allocation from 200 MB to 400 MB. Needed for
+     NodeJS in particular but everything is getting greedier.
+
