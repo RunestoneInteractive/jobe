@@ -60,22 +60,24 @@ abstract class Task {
         'numprocs'      => 5        // processes
     );
 
-    public $id;             // The task id - use the workdir basename
-    public $input;          // Stdin for this task
-    public $sourceFileName; // The name to give the source file
-    public $params;         // Request parameters
+    public string $id;             // The task id - use the workdir basename
+    public string $input;          // Stdin for this task
+    public string $sourceFileName; // The name to give the source file
+    public string $executableFileName;  // The name of the compiled (if necessary) executable
+    public array $params;          // Request parameters
 
-    public $userId = null;  // The user id (number counting from 0).
-    public $user;           // The corresponding user name (e.g. jobe01).
+    public ?int $userId = null;     // The user id (number counting from 0).
+    public ?string $user;           // The corresponding user name (e.g. jobe01).
 
-    public $cmpinfo = '';   // Output from compilation
-    public $time = 0;       // Execution time (secs)
-    public $memory = 0;     // Memory used (MB)
-    public $signal = 0;
-    public $stdout = '';    // Output from execution
-    public $stderr = '';
-    public $result = Task::RESULT_INTERNAL_ERR;  // Should get overwritten
-    public $workdir = '';   // The temporary working directory created in constructor
+    public string $cmpinfo = '';   // Output from compilation
+    public float $time = 0;       // Execution time (secs)
+    public int $memory = 0;     // Memory used (MB)
+    public int $signal = 0;
+    public string $stdout = '';    // Output from execution
+    public string $stderr = '';
+    public int $result = Task::RESULT_INTERNAL_ERR;  // Should get overwritten
+    public ?string $workdir = '';   // The temporary working directory created in constructor
+
 
     // ************************************************
     //   MAIN METHODS THAT HANDLE THE FLOW OF ONE JOB
@@ -274,12 +276,22 @@ abstract class Task {
      * from running the given command.
      */
     public function run_in_sandbox($wrappedCmd, $iscompile=true, $stdin=null) {
+        global $CI;
+
         $filesize = 1000 * $this->getParam('disklimit', $iscompile); // MB -> kB
         $streamsize = 1000 * $this->getParam('streamsize', $iscompile); // MB -> kB
         $memsize = 1000 * $this->getParam('memorylimit', $iscompile);
         $cputime = $this->getParam('cputime', $iscompile);
         $killtime = 2 * $cputime; // Kill the job after twice the allowed cpu time
         $numProcs = $this->getParam('numprocs', $iscompile) + 1; // The + 1 allows for the sh command below.
+
+        // CPU pinning - only active if enabled 
+        $sandboxCpuPinning = array();
+        if($CI->config->item('cpu_pinning_enabled') == TRUE) {
+            $taskset_core_id = intval($this->userId) % intval($CI->config->item('cpu_pinning_num_cores'));
+            $sandboxCpuPinning = array("taskset --cpu-list " . $taskset_core_id);
+        }
+
         $sandboxCommandBits = array(
                 "sudo " . dirname(__FILE__)  . "/../../runguard/runguard",
                 "--user={$this->user}",
@@ -290,6 +302,9 @@ abstract class Task {
                 "--nproc=$numProcs",       // Max num processes/threads for this *user*
                 "--no-core",
                 "--streamsize=$streamsize");   // Max stdout/stderr sizes
+
+        // Prepend CPU pinning command if enabled
+        $sandboxCommandBits = array_merge($sandboxCpuPinning, $sandboxCommandBits);
 
         if ($memsize != 0) {  // Special case: Matlab won't run with a memsize set. TODO: WHY NOT!
             $sandboxCommandBits[] = "--memsize=$memsize";
@@ -346,10 +361,8 @@ abstract class Task {
         } else {
             $param = $default;
         }
-        // ** BUG ** The min_params_compile value is being applied even if
-        // this is not a compile. I'm reluctant to fix, however, as it may
-        // break existing questions with inappropriately low resource settings.
-        if ($param != 0 && array_key_exists($key, $this->min_params_compile) &&
+
+        if ($iscompile && $param != 0 && array_key_exists($key, $this->min_params_compile) &&
                 $this->min_params_compile[$key] > $param) {
             $param = $this->min_params_compile[$key];
         }
