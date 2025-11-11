@@ -1,11 +1,14 @@
 # JOBE
 
-Version: 1.8.0, 9 October 2023
-
+Forked from version: 1.8.0, 9 October 2023
 
 Author: Richard Lobb, University of Canterbury, New Zealand
 
 Contributors: Tim Hunt, Fedor Lyanguzov, Kai-Cheung Leung, Marcus Klang
+
+Additional updates by Runestone contributors
+
+This is a fork of the [original Jobe project](https://github.com/trampgeek/jobe).
 
 ## Introduction
 
@@ -25,7 +28,7 @@ various status information plus the output and error output from the run.
 
 The interface is via a RESTful API, that is documented [here](./restapi.pdf).
 
-The languages C, C++, Python3, Python2,
+The languages C, C++, Kotlin, Python3, Python2,
 Octave, Java, Pascal and PHP are all built-in. Other languages can be added
 fairly easily although if using Jobe from CodeRunner it is usually even
 easier to write a Python-based question type that scripts the execution of
@@ -103,7 +106,7 @@ on it! **CAVEAT EMPTOR!**
 NOTE: a video walkthrough of the process of setting up a Jobe server
 on a DigitalOcean droplet is [here](https://www.youtube.com/watch?v=dGpnQpLnERw).
 
-Installation on Ubuntu 22.04 systems should be
+Installation on Ubuntu 24.04 systems should be
 straightforward but installation on other flavours of Linux or on systems
 with non-standard configurations may require
 Linux administrator skills.
@@ -120,6 +123,9 @@ The steps to fire up a Jobe Server on Digital Ocean using JobeInAbox are given b
 However, for security and performance reasons it it *strongly* recommended to run
 Jobe on a dedicated server, even when running it in a container.
 
+ **Runestone users take note: JobeInABox
+installs a pre-existing docker image for the original Jobe project, not this forked version.**
+
 Jobe runs only on Linux, which must have the Apache web server
 installed and running. PHP must have been compiled with the System V
 Semaphone and shared-memory functions enabled
@@ -132,7 +138,7 @@ installed.
 
 ### Installing the necessary dependencies
 
-On Ubuntu-22.04, the commands to set up all the necessary web tools plus
+On Ubuntu-24.04, the commands to set up all the necessary web tools plus
 all currently-supported languages is the following:
 
     sudo apt-get install apache2 php libapache2-mod-php php-cli\
@@ -141,7 +147,14 @@ all currently-supported languages is the following:
 
     sudo apt-get install --no-install-suggests --no-install-recommends  octave
 
-Octave and fp are required only if you need to run Octave or Pascal
+    KOTLIN_VERSION=2.2.21
+    wget https://github.com/JetBrains/kotlin/releases/download/v${KOTLIN_VERSION}/kotlin-compiler-${KOTLIN_VERSION}.zip -O /opt/kotlin.zip \
+        && unzip /opt/kotlin.zip -d /opt \
+        && rm /opt/kotlin.zip
+    chmod -R a+rw /opt/kotlinc
+
+
+Octave, fp, and Kotlin are required only if you need to run Octave or Pascal
 programs respectively.
 
 If you wish to use API-authentication, which is generally pointless when setting
@@ -191,7 +204,7 @@ WEBROOT with either /var/www or /var/www/html as appropriate.
 To clone Jobe:
 
     cd WEBROOT
-    sudo git clone https://github.com/trampgeek/jobe.git
+    sudo git clone https://github.com/RunestoneInteractive/jobe.git
 
 Installation is performed by the install script, which must be run as root
 so that it can add the required jobe run users (jobe00, jobe01, etc) and
@@ -260,6 +273,9 @@ work, as this will also just give you ASCII text.
 to use Version 3.3 or later.
 
 ## Setting up a JobeInAbox Digital Ocean server
+
+**Runestone users take note: JobeInABox
+installs a pre-existing docker image for the original Jobe project, not this forked version.**
 
 For people wanting to get a Jobe server up in hurry, the following is
 probably the simplest approach. This uses a minimal Digital Ocean virtual machine,

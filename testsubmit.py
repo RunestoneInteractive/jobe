@@ -69,6 +69,16 @@ JAVA_PROGRAM = """public class Thing {
 
 JAVA_PROGRAM_MD5 = md5(JAVA_PROGRAM.encode('utf-8')).hexdigest()
 
+KOTLIN_PROGRAM = """class Thing(var message: String) {
+    fun printme() {
+        println(message)
+    }
+}
+"""
+
+KOTLIN_PROGRAM_MD5 = md5(KOTLIN_PROGRAM.encode('utf-8')).hexdigest()
+
+
 # ===============================================
 #
 # Test List
@@ -648,6 +658,80 @@ public class Test {
     'parameters': {'cputime':10},
     'expect': { 'outcome': 15, 'stdout': "Un rôle délétère\n"}
 },
+
+# ================= Kotlin tests ==================
+{
+    'comment': 'Correct Kotlin program ',
+    'language_id': 'kotlin',
+    'sourcecode': r'''
+fun main()  {
+    println("What a lot of code I need to write.")
+}
+''',
+    'sourcefilename': 'Test.kt',
+    'parameters': {'cputime':10},
+    'expect': { 'outcome': 15, 'stdout': '''What a lot of code I need to write.
+'''}
+},
+
+{
+    'comment': 'Correct Kotlin program without supplied sourcefilename ',
+    'language_id': 'kotlin',
+    'sourcecode': r'''
+fun main()  {
+    println("What a lot of code I need to write.")
+}
+''',
+    'parameters': {'cputime':10},
+    'expect': { 'outcome': 15, 'stdout': '''What a lot of code I need to write.
+'''}
+},
+
+{
+    'comment': 'Syntactically incorrect Kotlin program ',
+    'language_id': 'kotlin',
+    'sourcecode': r'''
+fun main()  {
+    println("What a lot of code I need to write.")
+
+''',
+    'sourcefilename': 'Test.kt',
+    'parameters': {'cputime':10},
+    'expect': { 'outcome': 11 }
+},
+
+{
+    'comment': 'Kotlin program with a support class (.kt)',
+    'language_id': 'kotlin',
+    'sourcecode': r"""
+// A Kotlin program with a support class
+fun main() {
+    val thing = Thing("Farewell cruel world")
+    thing.printme()
+}
+""",
+    'files': [
+        (KOTLIN_PROGRAM_MD5, KOTLIN_PROGRAM)
+    ],
+    'file_list': [(KOTLIN_PROGRAM_MD5, 'Thing.kt')],
+    'parameters': {'cputime':10},
+    'expect': { 'outcome': 15, 'stdout': '''Farewell cruel world
+'''}
+},
+
+{
+    'comment': 'Kotlin program with Unicode output (will fail unless Jobe set up for UTF-8) ',
+    'language_id': 'kotlin',
+    'sourcecode': r'''
+fun main() {
+    println("Un rôle délétère")
+}
+''',
+    'sourcefilename': 'Test.kt',
+    'parameters': {'cputime':10},
+    'expect': { 'outcome': 15, 'stdout': "Un rôle délétère\n"}
+},
+
 
 #================= C++ tests ======================
 {
